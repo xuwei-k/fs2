@@ -7,6 +7,8 @@ jdk:
   - oraclejdk8
   - openjdk7
 # sudo: false
+script:
+  - sbt mimaReportBinaryIssues
 cache:
   directories:
     - $HOME/.ivy2
