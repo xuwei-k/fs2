@@ -144,7 +144,18 @@ lazy val root = project.in(file(".")).
 lazy val core = crossProject.in(file("core")).
   settings(commonSettings: _*).
   settings(
-    name := "fs2-core"
+    name := "fs2-core",
+    (unmanagedSourceDirectories in Compile) ++= {
+      val base = (baseDirectory in ThisBuild).value / "core/shared/src/main"
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, n)) if n <= 11 =>
+          (base / "scala-2.11") :: Nil
+        case Some((2, n)) if n >= 12 =>
+          (base / "scala-2.12") :: Nil
+        case _ =>
+          Nil
+      }
+    }
   ).
   jsSettings(commonJsSettings: _*)
 
