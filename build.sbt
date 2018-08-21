@@ -21,6 +21,16 @@ lazy val contributors = Seq(
 
 lazy val commonSettings = Seq(
   organization := "co.fs2",
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, v)) if v >= 13 =>
+        Nil
+      case _ =>
+        Seq(
+          "-Ypartial-unification"
+        )
+    }
+  },
   scalacOptions ++= Seq(
     "-feature",
     "-deprecation",
@@ -28,7 +38,6 @@ lazy val commonSettings = Seq(
     "-language:higherKinds",
     "-language:existentials",
     "-language:postfixOps",
-    "-Ypartial-unification"
   ) ++
     (if (scalaBinaryVersion.value.startsWith("2.12"))
        List(
@@ -51,13 +60,13 @@ lazy val commonSettings = Seq(
   scalacOptions in (Test, console) := (scalacOptions in (Compile, console)).value,
   javaOptions in (Test, run) ++= Seq("-Xms64m", "-Xmx64m"),
   libraryDependencies ++= Seq(
-    compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.6"),
+    compilerPlugin("org.spire-math" %% "kind-projector" % "0.9.7"),
     "org.typelevel" %%% "cats-core" % "1.2.0",
     "org.typelevel" %%% "cats-laws" % "1.2.0" % "test",
     "org.typelevel" %%% "cats-effect" % "1.0.0-RC3",
     "org.typelevel" %%% "cats-effect-laws" % "1.0.0-RC3" % "test",
-    "org.scalatest" %%% "scalatest" % "3.0.5" % "test",
-    "org.scalacheck" %%% "scalacheck" % "1.13.5" % "test"
+    "org.scalatest" %%% "scalatest" % "3.0.6-SNAP1" % "test",
+    "org.scalacheck" %%% "scalacheck" % "1.14.0" % "test"
   ),
   scmInfo := Some(ScmInfo(url("https://github.com/functional-streams-for-scala/fs2"),
                           "git@github.com:functional-streams-for-scala/fs2.git")),
@@ -220,7 +229,7 @@ lazy val core = crossProject(JVMPlatform, JSPlatform)
   .settings(
     name := "fs2-core",
     sourceDirectories in (Compile, scalafmt) += baseDirectory.value / "../shared/src/main/scala",
-    libraryDependencies += "org.scodec" %%% "scodec-bits" % "1.1.5"
+    libraryDependencies += "org.scodec" %%% "scodec-bits" % "1.1.6"
   )
   .jsSettings(commonJsSettings: _*)
 
@@ -234,15 +243,7 @@ lazy val coreJVM = core.jvm
       Seq(s"""scala.*;version="[$major.$minor,$major.${minor + 1})"""", "*")
     },
     OsgiKeys.additionalHeaders := Map("-removeheaders" -> "Include-Resource,Private-Package"),
-    osgiSettings,
-    libraryDependencies ++= {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, minor)) if minor >= 13 =>
-          Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "0.1.2" % "test")
-        case _ =>
-          Seq()
-      }
-    }
+    osgiSettings
   )
   .settings(mimaSettings)
 lazy val coreJS = core.js.disablePlugins(DoctestPlugin, MimaPlugin)
@@ -274,7 +275,18 @@ lazy val benchmarkMacros = project
   .settings(noPublish)
   .settings(
     name := "fs2-benchmark-macros",
-    addCompilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)),
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, v)) if v <= 12 =>
+          Seq(
+            compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+          )
+        case _ =>
+          // if scala 2.13.0-M4 or later, macro annotations merged into scala-reflect
+          // https://github.com/scala/scala/pull/6606
+          Nil
+      }
+    },
     libraryDependencies += scalaOrganization.value % "scala-reflect" % scalaVersion.value
   )
 
@@ -289,7 +301,18 @@ lazy val benchmark = project
       o.startsWith("-Xmx") || o.startsWith("-Xms")) ++ Seq("-Xms256m", "-Xmx256m")
   )
   .settings(
-    addCompilerPlugin(("org.scalamacros" % "paradise" % "2.1.1").cross(CrossVersion.patch)),
+    libraryDependencies ++= {
+      CrossVersion.partialVersion(scalaVersion.value) match {
+        case Some((2, v)) if v <= 12 =>
+          Seq(
+            compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.patch)
+          )
+        case _ =>
+          // if scala 2.13.0-M4 or later, macro annotations merged into scala-reflect
+          // https://github.com/scala/scala/pull/6606
+          Nil
+      }
+    },
     libraryDependencies += scalaOrganization.value % "scala-reflect" % scalaVersion.value
   )
   .enablePlugins(JmhPlugin)

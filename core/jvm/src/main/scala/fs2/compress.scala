@@ -56,7 +56,7 @@ object compress {
     if ((fin && deflater.finished) || (!fin && deflater.needsInput)) acc
     else {
       val count = deflater.deflate(buffer)
-      _deflate_collect(deflater, buffer, acc ++ buffer.iterator.take(count), fin)
+      _deflate_collect(deflater, buffer, acc ++ buffer.iterator.take(count).toSeq, fin)
     }
 
   /**
@@ -100,6 +100,6 @@ object compress {
     if (inflater.finished || inflater.needsInput) acc
     else {
       val count = inflater.inflate(buffer)
-      _inflate_collect(inflater, buffer, acc ++ buffer.iterator.take(count))
+      _inflate_collect(inflater, buffer, acc ++ buffer.iterator.take(count).toSeq)
     }
 }
